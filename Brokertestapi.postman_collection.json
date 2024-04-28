@@ -1,0 +1,78 @@
+{
+	"info": {
+		"_postman_id": "ad598930-a4ff-40c4-a567-8f7652c6a658",
+		"name": "Brokertestapi",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "14143074"
+	},
+	"item": [
+		{
+			"name": "PushBroker",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"id\":\"1 \",\r\n    \"firstName\":\"soguz\",\r\n    \"lastName\":\"ogz\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8081/locations/generateAndPublish?brokerType=ACTIVEMQ",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"locations",
+						"generateAndPublish"
+					],
+					"query": [
+						{
+							"key": "brokerType",
+							"value": "ACTIVEMQ"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getBrokerData",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8081/locations/filter?startDate=2020-04-01 11:12:12&endDate=2024-04-30 11:12:12",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"locations",
+						"filter"
+					],
+					"query": [
+						{
+							"key": "startDate",
+							"value": "2020-04-01 11:12:12"
+						},
+						{
+							"key": "endDate",
+							"value": "2024-04-30 11:12:12"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

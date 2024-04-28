@@ -1,0 +1,164 @@
+version: '3.8' 
+
+volumes:
+  prometheus_data: {}
+  grafana_data: {}
+
+services: 
+  cassandra1: 
+    image: cassandra:latest 
+    container_name: cassandra1
+    ports: 
+      - "9042:9042" 
+    environment: &environment  
+        CASSANDRA_SEEDS: "cassandra1,cassandra2,cassandra3"   
+        CASSANDRA_CLUSTER_NAME: IoTCluster 
+        CASSANDRA_DC: datacenter1 
+        #1.clsuter sivasta, 2.cluster istanbulda ise bu 1.clustersivasın içinde bulunan clusterler verilen hostnameye göre seeds ile eşleşip demorackcluster1 de toplanacak, eğer farklı hostnamelerde olanlar farklı networkte olupta o farklı networktekine de bir rack atanıp, seedleri farklı lokasyondaki cassandra instanceleri verilse idi, bu verilen instanceler farklı networkteki rack altında birleşecekti. aynı zamanda bunun ayrımını da DC yani datacenter ile belirtip hangi datacenterde racklanacağı belirtilmelidir.
+        CASSANDRA_RACK: demorackcluster1 
+        #bu environmentte verdiğimiz network ve rack tanımlamalarına göre konumlandırmanın dağıtımını sağlar.
+        CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch 
+        CASSANDRA_NUM_TOKENS: 128
+        #cogunluk node veriyi aldığını teyit ederse başarılıdır.
+        CASSANDRA_CONSISTENCY_LEVEL: QUORUM
+        #alınan veri en az kaç nodeye yazıldığında başarılı olacaktır ?
+        CASSANDRA_REPLICATION_FACTOR: 2
+
+  cassandra2: 
+    image: cassandra:latest 
+    container_name: cassandra2
+    restart: "no"
+    ports: 
+      - "9043:9042" 
+    environment: *environment   
+    depends_on: 
+      cassandra1:  
+        condition: service_started 
+
+  cassandra3: 
+    image: cassandra:latest 
+    container_name: cassandra3
+    entrypoint: ["/init.sh"]
+    restart: "no"
+    ports: 
+      - "9044:9042" 
+    environment: *environment   
+    depends_on: 
+      cassandra1:  
+        condition: service_started 
+    volumes:
+      - ./init.sh:/init.sh
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_SERVER_ID: 1
+    ports:
+      - "2181:2181"
+
+
+  kafka-1:
+    image: confluentinc/cp-kafka:latest
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka-1:19092,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092,DOCKER://host.docker.internal:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,DOCKER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_BROKER_ID: 1
+    depends_on:
+      - zookeeper
+
+  kafka-2:
+    image: confluentinc/cp-kafka:latest
+    ports:
+      - "9093:9093"
+      - "29093:29093"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka-2:19093,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9093,DOCKER://host.docker.internal:29093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,DOCKER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_BROKER_ID: 2
+    depends_on:
+      - zookeeper
+
+  kafka-3:
+    image: confluentinc/cp-kafka:latest
+    ports:
+      - "9094:9094"
+      - "29094:29094"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka-3:19094,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9094,DOCKER://host.docker.internal:29094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,DOCKER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_BROKER_ID: 3
+    depends_on:
+      - zookeeper
+  
+  rabbit:
+    container_name: rabbit
+    image: rabbitmq:3-management-alpine
+    environment:
+      RABBITMQ_ERLANG_COOKIE: "EXAMPLECOOKIE"
+      RABBITMQ_DEFAULT_USER: root
+      RABBITMQ_DEFAULT_PASS: root
+    ports:
+      - 13034:5672
+      - 13035:15672
+    deploy:
+      resources:
+        limits:
+          memory: '3096m'
+  activemq:
+    image: symptoma/activemq:latest
+    container_name: 'activemq'
+    ports:
+      - "61616:61616"
+      - "8161:8161"
+    volumes:
+      - ~/Documents/data/activemq/data:/data/activemq
+      - ~/Documents/data/activemq/log:/var/log/activemq
+      - ./activemq.xml:/opt/activemq/conf/activemq.xml
+  brokerapp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8080"
+    environment:
+      SPRING_CASSANDRA_SCHEMA_ACTION: 'CREATE_IF_NOT_EXISTS'
+      SPRING_CASSANDRA_REQUEST_TIMEOUT: 10s
+      SPRING_CASSANDRA_CONNECTION_CONNECT_TIMEOUT: 10s
+      SPRING_CASSANDRA_CONNECTION_INIT_QUERY_TIMEOUT: 10s
+      SPRING_CASSANDRA_CONTACT_POINTS: cassandra1:9042,cassandra2:9043
+      SPRING_CASSANDRA_KEYSPACE_NAME: brokertest
+      SPRING_CASSANDRA_LOCAL_DATACENTER: datacenter1
+      SPRING_ACTIVEMQ_BROKER_URL: tcp://activemq:61616
+      SPRING_ACTIVEMQ_USER: admin
+      SPRING_ACTIVEMQ_PASSWORD: admin
+      SIMPLE_ACTIVEMQ_QUEUE: activemq-iot-consumer
+      SPRING_APPLICATION_NAME: BrokerPublishAPI
+      SPRING_KAFKA_CONSUMER_BOOTSTRAP_SERVERS: kafka-1:29092,kafka-2:29093,kafka-3:29094
+      SPRING_KAFKA_CONSUMER_GROUP_ID: myGroup
+      SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
+      SPRING_KAFKA_CONSUMER_KEY_DESERIALIZER: org.apache.kafka.common.serialization.StringDeserializer
+      SPRING_KAFKA_CONSUMER_VALUE_DESERIALIZER: org.springframework.kafka.support.serializer.JsonDeserializer
+      SPRING_KAFKA_CONSUMER_PROPERTIES_SPRING_JSON_TRUSTED_PACKAGES: '*'
+      SPRING_KAFKA_PRODUCER_BOOTSTRAP_SERVERS: 'kafka-1:29092,kafka-2:29093,kafka-3:29094'
+      SPRING_KAFKA_PRODUCER_KEY_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
+      SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER: org.springframework.kafka.support.serializer.JsonSerializer
+      RABBITMQ_URI: amqp://root:root@rabbit:5672
+      BROKER_TYPE: ACTIVEMQ
+    depends_on:
+      - cassandra1
+      - cassandra2
+      - kafka-1
+      - kafka-2
+      - kafka-3
+      - rabbit
+      - activemq
