@@ -4,5 +4,5 @@ Nesnelerin İnterneti (Internet of Things - IoT) ekosistemi, giderek artan veri 
 <br/>
 <b>Project Architecture</b>
 <br/>
-![image](https://github.com/sogz/bigdatabrokersystem/assets/68134788/64bb92b8-5b66-4288-846a-88c52e571cf6)
 
+![image](https://github.com/sogz/bigdatabrokersystem/assets/68134788/42db7534-e55d-4327-bdf6-61ecf4659af6)
