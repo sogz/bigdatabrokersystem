@@ -61,23 +61,31 @@ public class LocationService {
 
         // Header row
         Row headerRow = sheet.createRow(0);
-        headerRow.createCell(0).setCellValue("City Name");
-        headerRow.createCell(1).setCellValue("Neighborhood Name");
-        headerRow.createCell(2).setCellValue("Latitude");
-        headerRow.createCell(3).setCellValue("Longitude");
-        headerRow.createCell(4).setCellValue("Created Date");
-        headerRow.createCell(5).setCellValue("Broker Type");
+        headerRow.createCell(0).setCellValue("Id");
+        headerRow.createCell(1).setCellValue("City Name");
+        headerRow.createCell(2).setCellValue("Neighborhood Name");
+        headerRow.createCell(3).setCellValue("Latitude");
+        headerRow.createCell(4).setCellValue("Longitude");
+        headerRow.createCell(5).setCellValue("Created Date");
+        headerRow.createCell(6).setCellValue("Broker Type");
+        headerRow.createCell(7).setCellValue("Near Point Id");
+        headerRow.createCell(8).setCellValue("Time to find Near Point Id");
+        headerRow.createCell(9).setCellValue("Test Group Id");
 
         // Data rows
         for (int i = 0; i < locations.size(); i++) {
             LocationEntity location = locations.get(i);
             Row row = sheet.createRow(i + 1);
-            row.createCell(0).setCellValue(location.getCityName());
-            row.createCell(1).setCellValue(location.getNeighborhoodName());
-            row.createCell(2).setCellValue(location.getLatitude());
-            row.createCell(3).setCellValue(location.getLongitude());
-            row.createCell(4).setCellValue(location.getCreatedDate().toString());
-            row.createCell(5).setCellValue(location.getBrokerType().toString());
+            row.createCell(0).setCellValue(location.getId());
+            row.createCell(1).setCellValue(location.getCityName());
+            row.createCell(2).setCellValue(location.getNeighborhoodName());
+            row.createCell(3).setCellValue(location.getLatitude());
+            row.createCell(4).setCellValue(location.getLongitude());
+            row.createCell(5).setCellValue(location.getCreatedDate().toString());
+            row.createCell(6).setCellValue(location.getBrokerType().toString());
+            row.createCell(7).setCellValue(location.getNearPointId() == null ? "" : location.getNearPointId());
+            row.createCell(8).setCellValue(location.getCalculatedMs());
+            row.createCell(9).setCellValue(location.getTestGroupId());
         }
 
         // Write workbook to byte array

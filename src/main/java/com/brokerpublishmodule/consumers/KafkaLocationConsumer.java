@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
+import java.util.Random;
+
 @Service
 public class KafkaLocationConsumer {
 
@@ -21,6 +23,11 @@ public class KafkaLocationConsumer {
     public void consumeJson(LocationEntity locationentity) {
         LOGGER.info(String.format("locationEntity: %s",locationentity.toString()));
         System.out.println("locationEntity: " + locationentity.toString());
+        var systemTime = System.currentTimeMillis();
+
+        locationentity.setNearPointId(locationentity.findNearestPointId(locationentity, locationService.getAllLocationEntity(), new Random().nextDouble() * 10));
+        locationentity.setCalculatedMs((System.currentTimeMillis() - systemTime));
+
         locationService.saveLocationEntity(locationentity);
     }
 }

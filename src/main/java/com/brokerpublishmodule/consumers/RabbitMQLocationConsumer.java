@@ -4,13 +4,12 @@ import com.brokerpublishmodule.brokers.RabbitMQ.consumer.BasicConsumer;
 import com.brokerpublishmodule.entities.LocationEntity;
 import com.brokerpublishmodule.services.LocationService;
 import com.rabbitmq.client.Delivery;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Random;
 
 public class RabbitMQLocationConsumer extends BasicConsumer<LocationEntity> {
-    public RabbitMQLocationConsumer(String listenQueueName,LocationService locationService) {
+    public RabbitMQLocationConsumer(String listenQueueName, LocationService locationService) {
         super(listenQueueName, (short) 1, false, 0, LocationEntity.class);
         this.locationService = locationService;
     }
@@ -25,7 +24,11 @@ public class RabbitMQLocationConsumer extends BasicConsumer<LocationEntity> {
 
             // other process yapay zeka modülünü çalıştır vb.
             //
+            var systemTime = System.currentTimeMillis();
 
+            sender.setNearPointId(sender.findNearestPointId(sender, locationService.getAllLocationEntity(), new Random().nextDouble() * 10));
+
+            sender.setCalculatedMs((System.currentTimeMillis() - systemTime));
             //save data
             locationService.saveLocationEntity(sender);
         } catch (Exception ex) {

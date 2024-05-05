@@ -38,8 +38,12 @@ public class LocationController {
     }
 
     @GetMapping("/generateAndPublish")
-    public void generateAndPublish(@RequestParam BrokerType brokerType) throws JsonProcessingException {
+    public void generateAndPublish(@RequestParam BrokerType brokerType, @RequestParam String testGroupId) throws JsonProcessingException {
         LocationEntity mockLocation = locationService.generateMockLocation(brokerType);
+        if(testGroupId == null || testGroupId.isBlank()){
+            throw new IllegalArgumentException("Test grubu id boş olamaz.");
+        }
+        mockLocation.setTestGroupId(testGroupId);
         switch (brokerType) {
             case ACTIVEMQ:
                 activeMQService.generateAndPublishMock(mockLocation);

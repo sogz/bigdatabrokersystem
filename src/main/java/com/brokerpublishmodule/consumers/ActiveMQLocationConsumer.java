@@ -13,6 +13,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 
+import java.util.Random;
+
 @Slf4j
 @Component
 public class ActiveMQLocationConsumer implements Listener {
@@ -23,16 +25,22 @@ public class ActiveMQLocationConsumer implements Listener {
     public ActiveMQLocationConsumer(LocationService locationService) {
         this.locationService = locationService;
     }
+
     LocationService locationService;
 
     @JmsListener(destination = "${simple-activemq.queue}", containerFactory = "queueListenerFactory")
     public void receiveMessageFromQueue(Message jsonMessage) throws JMSException, JsonProcessingException {
+
+        var systemTime = System.currentTimeMillis();
 
         TextMessage textMessage = (TextMessage) jsonMessage;
         String messageData = textMessage.getText();
 
         ObjectMapper mapper = new ObjectMapper();
         LocationEntity parsedData = mapper.readValue(messageData, LocationEntity.class);
+        parsedData.setNearPointId(parsedData.findNearestPointId(parsedData, locationService.getAllLocationEntity(), new Random().nextDouble() * 10));
+
+        parsedData.setCalculatedMs((System.currentTimeMillis() - systemTime));
 
         locationService.saveLocationEntity(parsedData);
 

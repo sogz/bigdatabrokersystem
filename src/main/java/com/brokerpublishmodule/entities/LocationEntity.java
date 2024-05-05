@@ -12,8 +12,6 @@ import java.util.*;
 
 @Table
 public class LocationEntity {
-
-
     @PrimaryKeyColumn(name = "id", ordinal = 0, type = PrimaryKeyType.PARTITIONED)
     private String id;
     @Column("city_name")
@@ -30,6 +28,23 @@ public class LocationEntity {
 
     @Column("brokerType")
     private BrokerType brokerType;
+
+    @Column("calculatedMs")
+    private long calculatedMs;
+
+    @Column("testGroupId")
+    private String testGroupId;
+
+    public String getNearPointId() {
+        return NearPointId;
+    }
+
+    public void setNearPointId(String nearPointId) {
+        NearPointId = nearPointId;
+    }
+
+    @Column("NearPointId")
+    private String NearPointId;
 
     public String getCityName() {
         return cityName;
@@ -100,7 +115,54 @@ public class LocationEntity {
 
     }
 
+    public long getCalculatedMs() {
+        return calculatedMs;
+    }
+
+    public void setCalculatedMs(long calculatedMs) {
+        this.calculatedMs = calculatedMs;
+    }
+
     public LocationEntity() {
 
+    }
+
+    public String findNearestPointId(LocationEntity targetLocation, Iterable<LocationEntity> otherLocations, double searchRadius) {
+        double targetLatitude = targetLocation.getLatitude();
+        double targetLongitude = targetLocation.getLongitude();
+        double minDistance = Double.MAX_VALUE;
+        String nearestPointId = null;
+
+        // Hedef konuma en yakın olanı bulma
+        for (LocationEntity location : otherLocations) {
+            double latitude = location.getLatitude();
+            double longitude = location.getLongitude();
+            double distance = calculateDistance(targetLatitude, targetLongitude, latitude, longitude);
+
+            if (distance < minDistance && distance <= searchRadius) {
+                minDistance = distance;
+                nearestPointId = location.getId();
+            }
+        }
+
+        return nearestPointId;
+    }
+
+    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+        double theta = lon1 - lon2;
+        double dist = Math.sin(Math.toRadians(lat1)) * Math.sin(Math.toRadians(lat2)) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) * Math.cos(Math.toRadians(theta));
+        dist = Math.acos(dist);
+        dist = Math.toDegrees(dist);
+        dist = dist * 60 * 1.1515;
+        return dist;
+    }
+
+    public String getTestGroupId() {
+        return testGroupId;
+    }
+
+    public void setTestGroupId(String testGroupId) {
+        this.testGroupId = testGroupId;
     }
 }
